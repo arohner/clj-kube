@@ -2,17 +2,19 @@
   (:require [cemerick.url :as url]
             [cheshire.core :as json]
             [clj-http.client :as http]
-            [clj-time.core :as time]
             [clojure.core.strint :refer (<<)]))
 
 (defn api-request [{:keys [url method path body opts return-body?] :as args
                     :or {method :get
                          return-body? true}}]
+  (assert url)
+  (assert path)
+  (assert method)
   (let [args (merge {:url (str url path)
                      :method method
                      :content-type :json
                      :as :json}
-                    args
+                    (dissoc args :url)
                     (when body
                       {:body (json/generate-string body)}))
         resp (http/request args)]
@@ -31,10 +33,12 @@
                path)]
     path))
 
-(defmacro def-resource [name {:keys [api namespaced? resource read-only?]}]
+(defmacro def-resource [name {:keys [api namespaced? resource read-only? listable?]
+                              :or {listable? true}}]
   (assert api)
   (assert resource)
   (let [getter (symbol (<< "get-~{name}"))
+        lister (symbol (<< "list-~{name}s"))
         get-doc-string (<< "return a ~{resource}")
         creater (symbol (<< "create-~{name}"))
         applyer (symbol (<< "apply-~{name}"))
@@ -45,13 +49,23 @@
     `(do
        (defn ~getter
          ~get-doc-string
-         [name# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
-         (api-request {:path (make-path (merge {:api ~api
+         [url# name# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
+         (api-request {:url url#
+                       :path (make-path (merge {:api ~api
                                                 :resource ~resource
                                                 :name name#}
                                                (when ~namespaced?
                                                  {:namespace ~'namespace})))
                        :method :get}))
+       ~(when listable?
+          `(do
+             (defn ~lister [url# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
+               (api-request {:url url#
+                             :path (make-path (merge {:api ~api
+                                                      :resource ~resource}
+                                                     (when ~namespaced?
+                                                       {:namespace ~'namespace})))
+                             :method :get}))))
        ~(when writeable?
           `(do
              (defn ~creater [url# data# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
@@ -102,8 +116,8 @@
                [url# data# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
                (let [name# (-> data# :metadata :name)]
                  (assert name#)
-                 (if (~exister name#)
-                   (let [old# (~getter name#)
+                 (if (~exister url# name#)
+                   (let [old# (~getter url# name#)
                          new# (update-in data# [:metadata] (fn [m#]
                                                              (merge (select-keys (:metadata old#) [:resourceVersion]) m#)))
                          new# (if (and (-> old# :spec :clusterIP)
@@ -130,9 +144,9 @@
                       :resource "petsets"
                       :namespaced? true})
 
-(def-resource pods {:api "/api/v1"
-                    :resource "pods"
-                    :namespaced? true})
+(def-resource pod {:api "/api/v1"
+                   :resource "pods"
+                   :namespaced? true})
 
 (def-resource secret {:api "/api/v1"
                       :resource "secrets"
