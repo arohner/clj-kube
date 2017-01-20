@@ -24,5 +24,14 @@ For each resource type, there are a series of functions in clj-kube.core, of the
 - `delete-foo`
 - `ensure-foo`
 - `foo-exists?`
+- `list-foos`
 
-They all take two arguments: The url of the kube API endpoint, and either the name of the resource or the data to create the resource
+Most commands take two required arguments: The url of the kube API
+endpoint, and either the name a resource or the data to create
+the resource.
+
+All commands take an optional map as the last argument. Currently the
+only option is `{:namespace "foo"}`. Namespaced resources (pods,
+deployments, secrets, etc) all use `:namespace default`. Pass
+:namespace to set the namespace, or `{:namespace nil}` to query all
+resources.
