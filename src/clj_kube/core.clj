@@ -45,6 +45,7 @@
         deleter (symbol (<< "delete-~{name}"))
         ensurer (symbol (<< "ensure-~{name}"))
         exister (symbol (<< "~{name}-exists?"))
+        updater (symbol (<< "update-~{name}"))
         writeable? (not read-only?)]
     `(do
        (defn ~getter
@@ -126,7 +127,11 @@
                                 new#)]
 
                      (~applyer url# new# {:namespace ~'namespace}))
-                   (~creater url# data#)))))))))
+                   (~creater url# data#))))
+             (defn ~updater
+               "clojure.core/update-in the resource"
+               [url# name# ks# f#]
+               (~applyer url# (update-in (~getter url# name#) ks# f#))))))))
 
 (def-resource configmap {:api "/api/v1"
                          :resource "configmaps"
