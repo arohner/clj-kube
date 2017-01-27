@@ -160,3 +160,11 @@
 (def-resource service {:api "/api/v1"
                        :resource "services"
                        :namespaced? true})
+
+(def-resource persistent-volume {:api "/api/v1"
+                                 :resource "persistentvolumes"
+                                 :namespaced? false})
+
+(def-resource persistent-volume-claim {:api "/api/v1"
+                                       :resource "persistentvolumeclaims"
+                                       :namespaced? true})
