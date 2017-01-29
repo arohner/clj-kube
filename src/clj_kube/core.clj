@@ -2,7 +2,29 @@
   (:require [cemerick.url :as url]
             [cheshire.core :as json]
             [clj-http.client :as http]
-            [clojure.core.strint :refer (<<)]))
+            [clojure.core.strint :refer (<<)]
+            [clojure.java.io :as io])
+  (:import java.security.KeyStore
+           java.security.cert.CertificateFactory))
+
+(defn maybe-kube-token
+  "If we're running inside a pod, find and return the auth-token or nil"
+  []
+  (let [f (io/file "/var/run/secrets/kubernetes.io/serviceaccount/token")]
+    (when (.exists f)
+      (slurp f))))
+
+(defn maybe-local-cacert
+  "If there's a ca.cert an in-pod kubernetes cert, load it into a keystore and return"
+  []
+  (let [f (io/file "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")]
+    (when (.exists f)
+      (let [ks (KeyStore/getInstance (KeyStore/getDefaultType))
+            _ (.load ks nil nil)
+            cf (CertificateFactory/getInstance "X.509")
+            cert (.generateCertificate cf (io/input-stream f))]
+        (.setCertificateEntry ks "local.kubernetes" cert)
+        ks))))
 
 (defn api-request [{:keys [url method path body opts return-body?] :as args
                     :or {method :get
@@ -16,7 +38,11 @@
                      :as :json}
                     (dissoc args :url)
                     (when body
-                      {:body (json/generate-string body)}))
+                      {:body (json/generate-string body)})
+                    (when-let [token (maybe-kube-token)]
+                      {:headers {"Authorization" (str "Bearer " token)}})
+                    (when-let [ks (maybe-local-cacert)]
+                      {:trust-store ks}))
         resp (http/request args)]
     (if (and (= 200 (:status resp)) return-body?)
       (:body resp)
