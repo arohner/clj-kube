@@ -19,12 +19,14 @@ Q: Why not use the official Swagger?
 
 For each resource type, there are a series of functions in clj-kube.core, of the form
 
-- `get-foo`
+- `apply-foo`
 - `create-foo`
 - `delete-foo`
 - `ensure-foo`
 - `foo-exists?`
-- `list-foos`
+- `get-foo`
+- `list-foo`
+- `update-foo`
 
 Most commands take two required arguments: The url of the kube API
 endpoint, and either the name a resource or the data to create
