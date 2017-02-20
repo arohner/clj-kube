@@ -86,7 +86,9 @@
                        :method :get}))
        ~(when listable?
           `(do
-             (defn ~lister [url# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
+             (defn ~lister
+               "Return a seq of resources of the specified type"
+               [url# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
                (api-request {:url url#
                              :path (make-path (merge {:api ~api
                                                       :resource ~resource}
@@ -96,8 +98,6 @@
        ~(when writeable?
           `(do
              (defn ~creater [url# data# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
-               (let [name# (-> data# :metadata :name)]
-)
                (api-request {:url url#
                              :path (make-path (merge {:api ~api
                                                       :resource ~resource}
@@ -105,7 +105,9 @@
                                                        {:namespace ~'namespace})))
                              :method :post
                              :body data#}))
-             (defn ~applyer [url# data# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
+             (defn ~applyer
+               "PUT `data` to the resource, updating it. identity determined via (-> data :metadata :name)"
+               [url# data# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
                (let [name# (-> data# :metadata :name)]
                  (assert name#)
                  (api-request {:url url#
@@ -116,7 +118,9 @@
                                                          {:namespace ~'namespace})))
                                :method :put
                                :body data#})))
-             (defn ~exister [url# name# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
+             (defn ~exister
+               "Return true if the resource exists"
+               [url# name# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
                (-> (api-request {:url url#
                                  :path (make-path (merge {:api ~api
                                                           :resource ~resource
@@ -155,12 +159,16 @@
                      (~applyer url# new# {:namespace ~'namespace}))
                    (~creater url# data#))))
              (defn ~updater
-               "clojure.core/update-in the resource"
+               "clojure.core/update-in the resource. `name` is the name of the resource, `ks` is a seq of keys, and f takes the value to update "
                [url# name# ks# f#]
                (~applyer url# (update-in (~getter url# name#) ks# f#))))))))
 
 (def-resource configmap {:api "/api/v1"
                          :resource "configmaps"
+                         :namespaced? true})
+
+(def-resource daemonset {:api "/apis/extensions/v1beta1"
+                         :resource "daemonsets"
                          :namespaced? true})
 
 (def-resource deployment {:api "/apis/extensions/v1beta1"
