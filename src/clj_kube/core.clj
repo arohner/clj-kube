@@ -147,8 +147,8 @@
                [url# data# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
                (let [name# (-> data# :metadata :name)]
                  (assert name#)
-                 (if (~exister url# name#)
-                   (let [old# (~getter url# name#)
+                 (if (~exister url# name# {:namespace ~'namespace})
+                   (let [old# (~getter url# name# {:namespace ~'namespace})
                          new# (update-in data# [:metadata] (fn [m#]
                                                              (merge (select-keys (:metadata old#) [:resourceVersion]) m#)))
                          new# (if (and (-> old# :spec :clusterIP)
@@ -157,11 +157,11 @@
                                 new#)]
 
                      (~applyer url# new# {:namespace ~'namespace}))
-                   (~creater url# data#))))
+                   (~creater url# data# {:namespace ~'namespace}))))
              (defn ~updater
                "clojure.core/update-in the resource. `name` is the name of the resource, `ks` is a seq of keys, and f takes the value to update "
-               [url# name# ks# f#]
-               (~applyer url# (update-in (~getter url# name#) ks# f#))))))))
+               [url# name# ks# f# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
+               (~applyer url# (update-in (~getter url# name#) ks# f# {:namespace ~'namespace}))))))))
 
 (def-resource configmap {:api "/api/v1"
                          :resource "configmaps"
