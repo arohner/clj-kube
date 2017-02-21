@@ -42,11 +42,16 @@
                     (when-let [token (maybe-kube-token)]
                       {:headers {"Authorization" (str "Bearer " token)}})
                     (when-let [ks (maybe-local-cacert)]
-                      {:trust-store ks}))
+                      {:trust-store ks})
+                    {:throw-exceptions false})
         resp (http/request args)]
-    (if (and (= 200 (:status resp)) return-body?)
+    (if (and (or (= 200 (:status resp))
+                 (= 201 (:status resp))) return-body?)
       (:body resp)
-      resp)))
+      (if (and (:body resp) (= "application/json" (get-in resp [:headers "Content-Type"])))
+        (let [resp (update-in resp [:body] json/parse-string)]
+          (throw (ex-info (format "clj-http: status %s" (:status resp)) resp)))
+        (throw (ex-info (format "clj-http: status %s" (:status resp)) resp))))))
 
 (defn make-path [{:keys [api namespace resource name]}]
   (assert api)
