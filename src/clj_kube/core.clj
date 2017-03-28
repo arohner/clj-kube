@@ -200,6 +200,14 @@
                        :resource "services"
                        :namespaced? true})
 
+(def-resource storage-class {:api "/apis/storage.k8s.io/v1beta1"
+                             :resource ""
+                             :namespaced? false})
+
+(def-resource stateful-set {:api "/apis/apps/v1beta1"
+                             :resource "statefulsets"
+                             :namespaced? true})
+
 (def-resource persistent-volume {:api "/api/v1"
                                  :resource "persistentvolumes"
                                  :namespaced? false})
