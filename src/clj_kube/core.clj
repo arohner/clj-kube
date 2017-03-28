@@ -46,9 +46,11 @@
                     {:throw-exceptions false})
         resp (http/request args)]
     (if (and (or (= 200 (:status resp))
-                 (= 201 (:status resp))) return-body?)
-      (:body resp)
-      (if (and (:body resp) (= "application/json" (get-in resp [:headers "Content-Type"])))
+                 (= 201 (:status resp))))
+      (if return-body?
+        (:body resp)
+        resp)
+      (if (and (:body resp) (string? (:body resp)) (= "application/json" (get-in resp [:headers "Content-Type"])))
         (let [resp (update-in resp [:body] json/parse-string)]
           (throw (ex-info (format "clj-http: status %s" (:status resp)) resp)))
         (throw (ex-info (format "clj-http: status %s" (:status resp)) resp))))))
