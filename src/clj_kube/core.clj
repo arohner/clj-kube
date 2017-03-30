@@ -105,24 +105,28 @@
        ~(when writeable?
           `(do
              (defn ~creater [url# data# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
-               (api-request {:url url#
-                             :path (make-path (merge {:api ~api
-                                                      :resource ~resource}
-                                                     (when ~namespaced?
-                                                       {:namespace ~'namespace})))
-                             :method :post
-                             :body data#}))
+               (let [namespace# ~'namespace
+                     namespace# (or (-> data# :metadata :namespace) namespace#)]
+                 (api-request {:url url#
+                               :path (make-path (merge {:api ~api
+                                                        :resource ~resource}
+                                                       (when ~namespaced?
+                                                         {:namespace namespace#})))
+                               :method :post
+                               :body data#})))
              (defn ~applyer
                "PUT `data` to the resource, updating it. identity determined via (-> data :metadata :name)"
                [url# data# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
-               (let [name# (-> data# :metadata :name)]
+               (let [name# (-> data# :metadata :name)
+                     namespace# ~'namespace
+                     namespace# (or (-> data# :metadata :namespace) namespace#)]
                  (assert name#)
                  (api-request {:url url#
                                :path (make-path (merge {:api ~api
                                                         :resource ~resource
                                                         :name name#}
                                                        (when ~namespaced?
-                                                         {:namespace ~'namespace})))
+                                                         {:namespace namespace#})))
                                :method :put
                                :body data#})))
              (defn ~exister
@@ -152,7 +156,9 @@
              (defn ~ensurer
                "Ensure the resource exists, creating it if it does not. `data` is the complete resource. Identity determined using `(-> data :metadata :name)` "
                [url# data# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
-               (let [name# (-> data# :metadata :name)]
+               (let [name# (-> data# :metadata :name)
+                     namespace# ~'namespace
+                     namespace# (or (-> data# :metadata :namespace) namespace#)]
                  (assert name#)
                  (if (~exister url# name# {:namespace ~'namespace})
                    (let [old# (~getter url# name# {:namespace ~'namespace})
@@ -163,8 +169,8 @@
                                 (assoc-in new# [:spec :clusterIP] (-> old# :spec :clusterIP))
                                 new#)]
 
-                     (~applyer url# new# {:namespace ~'namespace}))
-                   (~creater url# data# {:namespace ~'namespace}))))
+                     (~applyer url# new# {:namespace namespace#}))
+                   (~creater url# data# {:namespace namespace#}))))
              (defn ~updater
                "clojure.core/update-in the resource. `name` is the name of the resource, `ks` is a seq of keys, and f takes the value to update "
                [url# name# ks# f# & [{:keys [~'namespace] :or {~'namespace "default"}}]]
