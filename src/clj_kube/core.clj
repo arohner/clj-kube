@@ -188,6 +188,10 @@
                           :resource "deployments"
                           :namespaced? true})
 
+(def-resource event {:api "/api/v1"
+                     :resource "events"
+                     :namespaced? true})
+
 (def-resource node {:api "/api/v1"
                     :resource "nodes"
                     :namespaced? false})
