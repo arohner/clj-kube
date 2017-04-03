@@ -1,4 +1,4 @@
-(defproject arohner/clj-kube "0.1.7-SNAPSHOT"
+(defproject arohner/clj-kube "0.1.7"
   :dependencies [[com.cemerick/url "0.1.1"]
                  [clj-http "2.3.0"]
                  [cheshire "5.6.3"]
